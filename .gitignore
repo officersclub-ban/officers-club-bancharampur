@@ -1,0 +1,10 @@
+node_modules/
+.firebase/
+firebase-debug.log
+*.log
+.env
+.DS_Store
+# সদস্য তথ্যের ফাইল যেন ভুলে আপলোড না হয়
+*.xlsx
+*.xls
+*.csv

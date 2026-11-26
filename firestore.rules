@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ক্লাবের সেটিংস (মার্চেন্ট নাম্বার, চাঁদার পরিমাণ) সবাই দেখতে পারবে, বদলাতে পারবে শুধু অ্যাডমিন
+    match /settings/main {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    // এসএমএস গেটওয়ে URL/API কী — শুধু অ্যাডমিন
+    match /settings/private {
+      allow read, write: if request.auth != null;
+    }
+
+    // সদস্য তালিকা — শুধু অ্যাডমিন
+    match /members/{id} {
+      allow read, write: if request.auth != null;
+    }
+
+    // পেমেন্ট — যে কেউ শুধু "pending" তথ্য জমা দিতে পারবে; দেখা/অনুমোদন/মোছা শুধু অ্যাডমিন
+    match /payments/{id} {
+      allow create: if request.resource.data.status == 'pending'
+                    && request.resource.data.memberId == null
+                    && request.resource.data.trxId is string
+                    && request.resource.data.trxId.size() >= 6
+                    && request.resource.data.trxId.size() <= 20;
+      allow read, update, delete: if request.auth != null;
+    }
+  }
+}
