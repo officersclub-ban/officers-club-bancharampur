@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>অফিসার্স ক্লাব বাঞ্ছারামপুর</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--g:#0f6b4b;--g2:#0b5239;--bg:#f3f6f4;--card:#fff;--tx:#1d2b25;--mut:#6b7a72;--bd:#dde5e0;--red:#c62828;--amb:#b26a00;--bl:#1565c0}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Noto Sans Bengali',sans-serif;background:var(--bg);color:var(--tx);font-size:15px}
+header{background:linear-gradient(135deg,var(--g2),var(--g));color:#fff;padding:18px 16px;text-align:center}
+header h1{margin:0;font-size:24px}
+header p{margin:4px 0 0;opacity:.85;font-size:13px}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:18px;color:var(--g2)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;font:inherit;background:#fff}
+textarea{min-height:90px}
+button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:9px 14px;background:var(--g);color:#fff;font-weight:600}
+button.sec{background:#e6efe9;color:var(--g2)}
+button.red{background:var(--red)}
+button.bl{background:var(--bl)}
+button.sm{padding:5px 9px;font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{background:#fff;color:var(--tx);border:1px solid var(--bd)}
+.tabs button.on{background:var(--g);color:#fff;border-color:var(--g)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 7px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:middle}
+th{background:#eef4f0;color:var(--g2);position:sticky;top:0}
+.tw{overflow-x:auto;max-height:70vh}
+.stat{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px;text-align:center}
+.stat b{display:block;font-size:24px;color:var(--g2)}
+.stat span{color:var(--mut);font-size:13px}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+.paid{background:#dff3e6;color:#1b6b3a}.due{background:#fde4e4;color:var(--red)}.pend{background:#fff1d6;color:var(--amb)}
+.pay-box{background:#fff8e6;border:1px dashed #e0b84d;border-radius:10px;padding:12px;margin:8px 0;line-height:1.7}
+.big{font-size:22px;font-weight:700;letter-spacing:1px;color:var(--g2)}
+.hidden{display:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{font-size:13px;color:var(--mut);line-height:1.6}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:8px;z-index:99;display:none}
+.mode{font-size:12px;background:#ffe9b0;color:#7a5200;padding:4px 10px;border-radius:20px;display:inline-block;margin-top:6px}
+@media print{header button,.tabs,.noprint{display:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏛️ অফিসার্স ক্লাব বাঞ্ছারামপুর</h1>
+  <p>সদস্য তথ্য ও মাসিক চাঁদা ব্যবস্থাপনা</p>
+  <div id="modeBadge"></div>
+</header>
+
+<div class="wrap">
+
+<!-- ================= PUBLIC VIEW ================= -->
+<div id="publicView">
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">মাসিক চাঁদা প্রদান</h2>
+      <div class="row"><a href="index.html"><button class="sec sm" type="button">🏠 ক্লাবের ওয়েবসাইট</button></a><button class="sec sm" onclick="showLogin()">🔐 অ্যাডমিন লগইন</button></div>
+    </div>
+    <div class="pay-box">
+      <div>মাসিক চাঁদার পরিমাণ: <b id="pFee"></b> টাকা</div>
+      <div id="pMerchants"></div>
+      <div class="note">ধাপ: (১) বিকাশ/নগদ অ্যাপে "পেমেন্ট" অপশন থেকে নিচের মার্চেন্ট নাম্বারে টাকা পাঠান (২) পেমেন্ট শেষে পাওয়া ট্রানজেকশন আইডি (TrxID) নিচের ফর্মে লিখে জমা দিন।</div>
+    </div>
+    <div class="grid g2">
+      <div><label>আপনার মোবাইল নাম্বার (ক্লাবে নিবন্ধিত)</label><input id="payMobile" inputmode="numeric" placeholder="01XXXXXXXXX"></div>
+      <div><label>মাধ্যম</label><select id="payMethod"><option>বিকাশ</option><option>নগদ</option><option>রকেট</option><option>অন্যান্য</option></select></div>
+      <div><label>কোন মাসের চাঁদা</label><select id="payMonth"></select></div>
+      <div><label>টাকার পরিমাণ</label><input id="payAmount" inputmode="numeric"></div>
+      <div><label>ট্রানজেকশন আইডি (TrxID)</label><input id="payTrx" placeholder="যেমন: 8N7A6D5EE7" style="text-transform:uppercase"></div>
+    </div>
+    <div style="margin-top:12px"><button onclick="submitPayment()">পেমেন্ট তথ্য জমা দিন</button></div>
+    <p class="note">জমা দেওয়ার পর কোষাধ্যক্ষ ট্রানজেকশন যাচাই করে আপনার চাঁদা "পরিশোধিত" হিসেবে চিহ্নিত করবেন।</p>
+  </div>
+</div>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginView" class="hidden">
+  <div class="card" style="max-width:420px;margin:30px auto">
+    <h2>অ্যাডমিন লগইন</h2>
+    <div id="loginFb">
+      <label>ইমেইল</label><input id="lEmail" type="email">
+      <label>পাসওয়ার্ড</label><input id="lPass" type="password">
+    </div>
+    <div id="loginLocal" class="hidden">
+      <label>পিন (ডেমো মোড, ডিফল্ট ১২৩৪)</label><input id="lPin" type="password" inputmode="numeric">
+    </div>
+    <div class="row" style="margin-top:12px"><button onclick="doLogin()">প্রবেশ করুন</button><button class="sec" onclick="showPublic()">ফিরে যান</button></div>
+  </div>
+</div>
+
+<!-- ================= ADMIN ================= -->
+<div id="adminView" class="hidden">
+  <div class="tabs" id="tabs">
+    <button data-t="dash" class="on">📊 ড্যাশবোর্ড</button>
+    <button data-t="members">👥 সদস্য</button>
+    <button data-t="dues">💰 মাসিক হিসাব</button>
+    <button data-t="pay">🧾 পেমেন্ট যাচাই <span id="pendCount"></span></button>
+    <button data-t="notice">📢 নোটিশ</button>
+    <button data-t="sms">✉️ এসএমএস</button>
+    <button data-t="set">⚙️ সেটিংস</button>
+    <button class="sec" onclick="logout()" style="margin-left:auto">লগআউট</button>
+  </div>
+
+  <!-- dashboard -->
+  <div id="t_dash">
+    <div class="card">
+      <div class="row"><b>মাস:</b><select id="dMonth" style="width:auto" onchange="renderDash()"></select></div>
+      <div class="grid g4" style="margin-top:10px" id="dStats"></div>
+    </div>
+    <div class="card"><h2>এই মাসে বকেয়া সদস্য</h2><div class="tw" id="dDueList"></div></div>
+  </div>
+
+  <!-- members -->
+  <div id="t_members" class="hidden">
+    <div class="card">
+      <h2 id="mFormTitle">নতুন সদস্য যোগ করুন</h2>
+      <input type="hidden" id="mId">
+      <div class="grid g2">
+        <div><label>নাম *</label><input id="mName"></div>
+        <div><label>পদবী *</label><input id="mDesig"></div>
+        <div><label>দপ্তরের নাম *</label><input id="mOffice"></div>
+        <div><label>মোবাইল নাম্বার *</label><input id="mMobile" inputmode="numeric" placeholder="01XXXXXXXXX"></div>
+        <div><label>ঠিকানা</label><input id="mAddr"></div>
+        <div><label>সদস্যপদ শুরুর মাস</label><input id="mJoin" type="month"></div>
+        <div><label>স্ট্যাটাস</label><select id="mActive"><option value="1">সক্রিয়</option><option value="0">নিষ্ক্রিয়/বদলি</option></select></div>
+        <div><label>পাবলিক ওয়েবসাইটে নাম দেখাবে? (শুধু নাম, পদবী, দপ্তর)</label><select id="mPub"><option value="1">হ্যাঁ</option><option value="0">না</option></select></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button onclick="saveMember()">সংরক্ষণ</button><button class="sec" onclick="clearMemberForm()">ক্লিয়ার</button></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">সদস্য তালিকা (<span id="mCount"></span>)</h2>
+        <div class="row noprint"><input id="mSearch" placeholder="খুঁজুন..." oninput="renderMembers()" style="width:180px"><button class="sec sm" onclick="window.print()">🖨️ প্রিন্ট</button><button class="sec sm" onclick="exportCSV()">⬇️ CSV</button>
+        <button class="bl sm" onclick="$('xlFile').click()">📥 এক্সেল ইমপোর্ট</button><button class="sec sm" onclick="downloadTemplate()">📄 নমুনা ফাইল</button>
+        <input type="file" id="xlFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="importExcel(this)"></div></div>
+      <div id="xlResult" class="note" style="margin-top:8px"></div>
+      <div class="tw" id="mTable" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- dues -->
+  <div id="t_dues" class="hidden">
+    <div class="card">
+      <div class="row"><b>মাস:</b><select id="uMonth" style="width:auto" onchange="renderDues()"></select>
+        <select id="uFilter" style="width:auto" onchange="renderDues()"><option value="all">সবাই</option><option value="paid">পরিশোধিত</option><option value="due">বকেয়া</option></select></div>
+      <div class="tw" id="uTable" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- payments -->
+  <div id="t_pay" class="hidden">
+    <div class="card">
+      <h2>যাচাইয়ের অপেক্ষায় থাকা পেমেন্ট</h2>
+      <div class="tw" id="pendTable"></div>
+    </div>
+    <div class="card">
+      <h2>মার্চেন্ট স্টেটমেন্ট থেকে স্বয়ংক্রিয় মিলানো</h2>
+      <p class="note">বিকাশ/নগদ মার্চেন্ট পোর্টাল বা অ্যাপের ট্রানজেকশন তালিকা (TrxID, মোবাইল, টাকা) কপি করে এখানে পেস্ট করুন। সিস্টেম TrxID মিলিয়ে অপেক্ষমাণ পেমেন্ট অনুমোদন করবে; TrxID না মিললে মোবাইল নাম্বার দিয়ে সদস্য খুঁজে নির্বাচিত মাসের চাঁদা পরিশোধিত করবে।</p>
+      <div class="row"><b>যে মাসের জন্য:</b><select id="impMonth" style="width:auto"></select></div>
+      <textarea id="impText" placeholder="8N7A6D5EE7  01712345678  500&#10;8N7B1C2DD9  01812345678  500"></textarea>
+      <div class="row" style="margin-top:8px"><button onclick="importStatement()">মিলিয়ে দেখুন ও আপডেট করুন</button></div>
+      <div id="impResult" class="note" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h2>সর্বশেষ লেনদেন</h2>
+      <div class="tw" id="allPayTable"></div>
+    </div>
+  </div>
+
+  <!-- notices -->
+  <div id="t_notice" class="hidden">
+    <div class="card">
+      <h2>পাবলিক ওয়েবসাইটের নোটিশ / খবর</h2>
+      <div class="grid g2">
+        <div><label>শিরোনাম *</label><input id="nTitle"></div>
+        <div><label>তারিখ</label><input id="nDate" type="date"></div>
+      </div>
+      <label>বিস্তারিত</label><textarea id="nBody"></textarea>
+      <div style="margin-top:10px"><button onclick="saveNotice()">নোটিশ প্রকাশ করুন</button></div>
+      <p class="note">এখানে প্রকাশ করা নোটিশ ক্লাবের পাবলিক ওয়েবসাইটে (index.html) সবাই দেখতে পাবে।</p>
+    </div>
+    <div class="card"><h2>প্রকাশিত নোটিশ</h2><div class="tw" id="noticeTable"></div></div>
+  </div>
+
+  <!-- sms -->
+  <div id="t_sms" class="hidden">
+    <div class="card">
+      <h2>বকেয়া চাঁদার এসএমএস</h2>
+      <label>বার্তার টেমপ্লেট ({name} নাম, {months} বকেয়া মাস, {amount} মোট টাকা, {fee} মাসিক চাঁদা, {club} ক্লাবের নাম)</label>
+      <textarea id="smsTpl" onchange="saveSettingsPartial({smsTemplate:this.value})"></textarea>
+      <div class="note" id="smsLen"></div>
+      <div class="row" style="margin-top:10px">
+        <button onclick="smsAll()" class="bl">📡 গেটওয়ে দিয়ে সব বকেয়াদারকে পাঠান</button>
+        <button class="sec" onclick="copyNumbers()">নাম্বারগুলো কপি করুন</button>
+      </div>
+      <p class="note">"গেটওয়ে" ব্যবহার করতে সেটিংস থেকে এসএমএস গেটওয়ের URL বসাতে হবে। না থাকলে নিচের "ফোন থেকে পাঠান" বাটনে ক্লিক করলে আপনার ফোনের মেসেজ অ্যাপ খুলে যাবে।</p>
+      <div class="tw" id="smsTable" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- settings -->
+  <div id="t_set" class="hidden">
+    <div class="card">
+      <h2>ক্লাব ও পেমেন্ট সেটিংস</h2>
+      <div class="grid g2">
+        <div><label>ক্লাবের নাম</label><input id="sClub"></div>
+        <div><label>মাসিক চাঁদা (টাকা)</label><input id="sFee" inputmode="numeric"></div>
+        <div><label>বিকাশ মার্চেন্ট নাম্বার</label><input id="sBkash"></div>
+        <div><label>নগদ মার্চেন্ট নাম্বার</label><input id="sNagad"></div>
+        <div><label>চাঁদা আদায় শুরুর মাস</label><input id="sStart" type="month"></div>
+        <div><label>ডেমো মোড পিন (শুধু লোকাল মোডে)</label><input id="sPin"></div>
+        <div><label>ক্লাবের স্লোগান (ওয়েবসাইটে)</label><input id="sTagline"></div>
+        <div><label>প্রতিষ্ঠাকাল</label><input id="sEst" placeholder="যেমন: ২০১৯"></div>
+        <div><label>ঠিকানা</label><input id="sAddr"></div>
+        <div><label>যোগাযোগের ফোন</label><input id="sPhone"></div>
+        <div><label>ইমেইল</label><input id="sEmail" type="email"></div>
+        <div style="grid-column:1/-1"><label>ক্লাব সম্পর্কে (ওয়েবসাইটে দেখাবে)</label><textarea id="sAbout"></textarea></div>
+        <div style="grid-column:1/-1"><label>কার্যনির্বাহী কমিটি (প্রতি লাইনে একজন: নাম | পদ | দপ্তর)</label><textarea id="sCommittee" placeholder="মোঃ উদাহরণ | সভাপতি | উপজেলা নির্বাহী অফিসারের কার্যালয়"></textarea></div>
+      </div>
+      <h2 style="margin-top:18px">এসএমএস গেটওয়ে</h2>
+      <label>গেটওয়ে URL (GET) — {number} ও {message} বসবে</label>
+      <input id="sSmsUrl" placeholder="http://bulksmsbd.net/api/smsapi?api_key=YOUR_KEY&type=text&number={number}&senderid=YOUR_ID&message={message}">
+      <p class="note">API কী এখানে রাখলে ওয়েবসাইট যার কাছে আছে সেই অ্যাডমিন দেখতে পারবে। নিরাপদ ব্যবহারের জন্য পরে Firebase Cloud Function দিয়ে সার্ভার-সাইডে পাঠানো উচিত।</p>
+      <div class="row" style="margin-top:10px"><button onclick="saveSettings()">সেটিংস সংরক্ষণ</button><button class="sec" onclick="syncAllPublic()">🌐 সব সদস্যের নাম পাবলিক তালিকায় সিংক করুন</button></div>
+    </div>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   ফায়ারবেস কনফিগ (ঐচ্ছিক)
+   ফাঁকা রাখলে অ্যাপ "ডেমো মোডে" চলবে (ডেটা শুধু এই ব্রাউজারে থাকবে)।
+   সবার জন্য একসাথে ডেটা সিংক করতে Firebase প্রজেক্ট খুলে নিচে বসান।
+   Firestore Rules:
+     rules_version='2'; service cloud.firestore { match /databases/{d}/documents {
+       match /settings/{id}  { allow read: if true; allow write: if request.auth!=null; }
+       match /members/{id}   { allow read, write: if request.auth!=null; }
+       match /payments/{id}  { allow create: if true; allow read, update, delete: if request.auth!=null; }
+     }}
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAElLvOg_Hf9PgdiScJ6G4e6TobqyEtVdw",
+  authDomain: "officersclub-bb40f.firebaseapp.com",
+  projectId: "officersclub-bb40f",
+  storageBucket: "officersclub-bb40f.firebasestorage.app",
+  messagingSenderId: "279054614514",
+  appId: "1:279054614514:web:3d05d10a3b85887840b56b"
+};
+
+const BN = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+const bn = v => String(v).replace(/\d/g, d => BN[d]);
+const MN = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const mLabel = m => { const [y,mo]=m.split('-'); return MN[+mo-1]+' '+bn(y); };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const norm = n => String(n||'').replace(/\D/g,'').slice(-10);
+const nowM = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)}
+
+const DEFAULT_SETTINGS = {
+  clubName:'অফিসার্স ক্লাব বাঞ্ছারামপুর', fee:500, bkash:'', nagad:'', startMonth:nowM(),
+  smsTemplate:'সম্মানিত {name}, {club} এর আপনার চাঁদা বকেয়া আছে ({months}), মোট {amount} টাকা। অনুগ্রহ করে মার্চেন্ট নাম্বারে পরিশোধ করুন। ধন্যবাদ।',
+  smsUrl:'', pin:'1234',
+  tagline:'সৌহার্দ্য ও সেবার বন্ধনে', established:'', address:'', phone:'', email:'', about:'', committee:''
+};
+let S = { settings:{...DEFAULT_SETTINGS}, members:[], payments:[], notices:[] };
+let isAdmin = false;
+const useFb = !!firebaseConfig.apiKey;
+let db, auth;
+
+/* ---------------- Storage layer ---------------- */
+const Store = {
+  async init(){
+    if(useFb){
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore(); auth = firebase.auth();
+      db.collection('settings').doc('main').onSnapshot(s=>{ if(s.exists) S.settings={...S.settings,...s.data()}; renderAll(); });
+      auth.onAuthStateChanged(u=>{ isAdmin=!!u; if(u) attachAdminListeners(); route(); });
+    } else {
+      try{ const d=JSON.parse(localStorage.getItem('oc_data')||'null'); if(d) S={...S,...d,settings:{...DEFAULT_SETTINGS,...d.settings}}; }catch(e){}
+    }
+  },
+  persist(){ if(!useFb) localStorage.setItem('oc_data',JSON.stringify(S)); },
+  async save(col,obj){
+    if(useFb){ await db.collection(col).doc(obj.id).set(obj); }
+    else { const a=S[col]; const i=a.findIndex(x=>x.id===obj.id); i>=0?a[i]=obj:a.push(obj); this.persist(); renderAll(); }
+  },
+  async remove(col,id){
+    if(useFb){ await db.collection(col).doc(id).delete(); }
+    else { S[col]=S[col].filter(x=>x.id!==id); this.persist(); renderAll(); }
+  },
+  async saveSettings(s){
+    S.settings={...S.settings,...s};
+    if(useFb){
+      const {smsUrl,pin,...pub}=S.settings;
+      await db.collection('settings').doc('main').set(pub);
+      await db.collection('settings').doc('private').set({smsUrl:smsUrl||''});
+    } else this.persist();
+    renderAll();
+  }
+};
+let attached=false;
+function attachAdminListeners(){
+  if(attached) return; attached=true;
+  db.collection('settings').doc('private').onSnapshot(s=>{ if(s.exists){ S.settings.smsUrl=s.data().smsUrl||''; renderAll(); } });
+  db.collection('members').onSnapshot(s=>{ S.members=s.docs.map(d=>d.data()); renderAll(); });
+  db.collection('payments').onSnapshot(s=>{ S.payments=s.docs.map(d=>d.data()); renderAll(); });
+  db.collection('notices').onSnapshot(s=>{ S.notices=s.docs.map(d=>d.data()); renderAll(); });
+}
+
+/* ---------------- Helpers ---------------- */
+function monthsRange(a,b){
+  const out=[]; let [y,m]=a.split('-').map(Number); const [ey,em]=b.split('-').map(Number);
+  while(y<ey||(y===ey&&m<=em)){ out.push(y+'-'+String(m).padStart(2,'0')); m++; if(m>12){m=1;y++} }
+  return out;
+}
+const allMonths = () => { const s=S.settings.startMonth||nowM(); const arr=monthsRange(s<=nowM()?s:nowM(),nowM()); return arr; };
+const paidOf = (mid) => new Set(S.payments.filter(p=>p.memberId===mid&&p.status==='paid').map(p=>p.month));
+function memberDueMonths(m){
+  const s = [S.settings.startMonth||nowM(), m.join||''].sort().pop();
+  const start = s>nowM()?nowM():s; const paid=paidOf(m.id);
+  return monthsRange(start,nowM()).filter(x=>!paid.has(x));
+}
+const activeMembers = () => S.members.filter(m=>m.active!=='0');
+const findByMobile = mob => S.members.find(m=>norm(m.mobile)===norm(mob));
+
+/* ---------------- Routing ---------------- */
+function show(id){ ['publicView','loginView','adminView'].forEach(v=>$(v).classList.toggle('hidden',v!==id)); }
+function showPublic(){ show('publicView'); }
+function showLogin(){
+  $('loginFb').classList.toggle('hidden',!useFb); $('loginLocal').classList.toggle('hidden',useFb); show('loginView');
+}
+function route(){ if(isAdmin) show('adminView'); else if(!$('loginView').classList.contains('hidden')) {} else show('publicView'); renderAll(); }
+async function doLogin(){
+  try{
+    if(useFb){ await auth.signInWithEmailAndPassword($('lEmail').value.trim(),$('lPass').value); }
+    else { if($('lPin').value!==String(S.settings.pin)) return toast('ভুল পিন'); isAdmin=true; route(); }
+  }catch(e){ toast('লগইন ব্যর্থ: '+e.message); }
+}
+async function logout(){ if(useFb) await auth.signOut(); isAdmin=false; showPublic(); }
+
+/* ---------------- Public payment ---------------- */
+function fillPublic(){
+  $('pFee').textContent=bn(S.settings.fee);
+  const mm=[]; if(S.settings.bkash) mm.push(`<div>বিকাশ মার্চেন্ট: <span class="big">${esc(S.settings.bkash)}</span></div>`);
+  if(S.settings.nagad) mm.push(`<div>নগদ মার্চেন্ট: <span class="big">${esc(S.settings.nagad)}</span></div>`);
+  $('pMerchants').innerHTML = mm.join('') || '<div class="note">মার্চেন্ট নাম্বার এখনো সেট করা হয়নি।</div>';
+  const cur=$('payMonth').value; const ms=allMonths().slice().reverse();
+  $('payMonth').innerHTML=ms.map(m=>`<option value="${m}">${mLabel(m)}</option>`).join(''); if(cur) $('payMonth').value=cur;
+  if(!$('payAmount').value) $('payAmount').value=S.settings.fee;
+}
+async function submitPayment(){
+  const mobile=$('payMobile').value.trim(), trx=$('payTrx').value.trim().toUpperCase();
+  if(!/^01\d{9}$/.test(mobile.replace(/\D/g,'').replace(/^88/,''))) return toast('সঠিক মোবাইল নাম্বার দিন');
+  if(trx.length<6) return toast('সঠিক TrxID দিন');
+  const p={id:uid(),memberId:null,mobile:norm(mobile),month:$('payMonth').value,amount:+$('payAmount').value||0,
+    method:$('payMethod').value,trxId:trx,status:'pending',createdAt:Date.now()};
+  if(S.payments.some(x=>x.trxId===trx)) return toast('এই TrxID আগেই জমা হয়েছে');
+  try{ await Store.save('payments',p); $('payTrx').value=''; toast('ধন্যবাদ! আপনার পেমেন্ট তথ্য জমা হয়েছে'); }
+  catch(e){ toast('জমা ব্যর্থ: '+e.message); }
+}
+
+/* ---------------- Admin tabs ---------------- */
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-t]'); if(!b) return;
+  document.querySelectorAll('#tabs button[data-t]').forEach(x=>x.classList.toggle('on',x===b));
+  ['dash','members','dues','pay','notice','sms','set'].forEach(t=>$('t_'+t).classList.toggle('hidden',t!==b.dataset.t));
+  renderAll();
+});
+function monthSelects(){
+  const ms=allMonths().slice().reverse();
+  ['dMonth','uMonth','impMonth'].forEach(id=>{ const el=$(id), cur=el.value; el.innerHTML=ms.map(m=>`<option value="${m}">${mLabel(m)}</option>`).join(''); if(cur&&ms.includes(cur)) el.value=cur; });
+}
+
+/* ---------------- Dashboard ---------------- */
+function renderDash(){
+  const m=$('dMonth').value||nowM(); const act=activeMembers();
+  const paid=act.filter(x=>paidOf(x.id).has(m)); const due=act.filter(x=>!paidOf(x.id).has(m));
+  const coll=S.payments.filter(p=>p.status==='paid'&&p.month===m).reduce((a,p)=>a+(+p.amount||0),0);
+  $('dStats').innerHTML=`
+   <div class="stat"><b>${bn(act.length)}</b><span>সক্রিয় সদস্য</span></div>
+   <div class="stat"><b style="color:#1b6b3a">${bn(paid.length)}</b><span>পরিশোধ করেছেন</span></div>
+   <div class="stat"><b style="color:var(--red)">${bn(due.length)}</b><span>বকেয়া</span></div>
+   <div class="stat"><b>৳${bn(coll)}</b><span>এ মাসে আদায়</span></div>`;
+  $('dDueList').innerHTML = due.length? `<table><tr><th>নাম</th><th>পদবী</th><th>দপ্তর</th><th>মোবাইল</th><th>মোট বকেয়া মাস</th></tr>`+
+    due.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.desig)}</td><td>${esc(x.office)}</td><td>${esc(x.mobile)}</td><td>${bn(memberDueMonths(x).length)}</td></tr>`).join('')+'</table>'
+    : '<p class="note">🎉 এই মাসে সবাই পরিশোধ করেছেন।</p>';
+}
+
+/* ---------------- Members ---------------- */
+function clearMemberForm(){ ['mId','mName','mDesig','mOffice','mMobile','mAddr'].forEach(i=>$(i).value=''); $('mJoin').value=''; $('mActive').value='1'; $('mPub').value='1'; $('mFormTitle').textContent='নতুন সদস্য যোগ করুন'; }
+async function saveMember(){
+  const name=$('mName').value.trim(), desig=$('mDesig').value.trim(), office=$('mOffice').value.trim(), mobile=$('mMobile').value.trim();
+  if(!name||!desig||!office||!mobile) return toast('* চিহ্নিত ঘর পূরণ করুন');
+  if(!/^01\d{9}$/.test(mobile.replace(/\D/g,'').replace(/^88/,''))) return toast('মোবাইল নাম্বার সঠিক নয়');
+  const id=$('mId').value||uid(); const dup=S.members.find(x=>norm(x.mobile)===norm(mobile)&&x.id!==id);
+  if(dup) return toast('এই মোবাইল নাম্বার ইতোমধ্যে '+dup.name+' এর নামে আছে');
+  const mem={id,name,desig,office,mobile:mobile.replace(/\D/g,'').replace(/^88/,''),addr:$('mAddr').value.trim(),join:$('mJoin').value,active:$('mActive').value,pub:$('mPub').value};
+  await Store.save('members',mem); syncPublic(mem);
+  clearMemberForm(); toast('সংরক্ষিত হয়েছে');
+}
+function editMember(id){
+  const m=S.members.find(x=>x.id===id); if(!m) return;
+  $('mId').value=m.id;$('mName').value=m.name;$('mDesig').value=m.desig;$('mOffice').value=m.office;$('mMobile').value=m.mobile;$('mAddr').value=m.addr||'';$('mJoin').value=m.join||'';$('mActive').value=m.active||'1'; $('mPub').value=m.pub||'1';
+  $('mFormTitle').textContent='সদস্যের তথ্য সম্পাদনা'; window.scrollTo({top:0,behavior:'smooth'});
+}
+async function delMember(id){ if(confirm('এই সদস্যকে মুছে ফেলবেন? (তার পেমেন্ট রেকর্ড থাকবে)')){ await Store.remove('members',id); syncPublic({id,active:'0'}); } }
+function renderMembers(){
+  const q=($('mSearch').value||'').trim().toLowerCase();
+  const list=S.members.filter(m=>!q||[m.name,m.desig,m.office,m.mobile,m.addr].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'bn'));
+  $('mCount').textContent=bn(list.length);
+  $('mTable').innerHTML=`<table><tr><th>#</th><th>নাম</th><th>পদবী</th><th>দপ্তর</th><th>মোবাইল</th><th>ঠিকানা</th><th>স্ট্যাটাস</th><th class="noprint"></th></tr>`+
+   list.map((m,i)=>`<tr><td>${bn(i+1)}</td><td>${esc(m.name)}</td><td>${esc(m.desig)}</td><td>${esc(m.office)}</td><td>${esc(m.mobile)}</td><td>${esc(m.addr)}</td><td>${m.active==='0'?'নিষ্ক্রিয়':'সক্রিয়'}</td>
+   <td class="noprint"><button class="sec sm" onclick="editMember('${m.id}')">✏️</button> <button class="red sm" onclick="delMember('${m.id}')">🗑️</button></td></tr>`).join('')+'</table>';
+}
+function exportCSV(){
+  const rows=[['নাম','পদবী','দপ্তর','মোবাইল','ঠিকানা']].concat(S.members.map(m=>[m.name,m.desig,m.office,m.mobile,m.addr||'']));
+  const csv='\ufeff'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='members.csv'; a.click();
+}
+
+/* ---------------- Excel import ---------------- */
+const XL_COLS = {
+  name:['নাম','name','সদস্যের নাম'], desig:['পদবী','পদবি','designation','desig','পদ'],
+  office:['দপ্তর','office','অফিস'], mobile:['মোবাইল','mobile','phone','ফোন','cell'],
+  addr:['ঠিকানা','address'], join:['শুরুর মাস','join','যোগদান']
+};
+const bn2en = s => String(s??'').replace(/[০-৯]/g, d => '০১২৩৪৫৬৭৮৯'.indexOf(d));
+function mapHeader(h){
+  const k=String(h||'').trim().toLowerCase();
+  if(!k) return null;
+  // নির্দিষ্ট কলাম আগে মেলানো হয়; "নাম" সবার শেষে (কারণ "দপ্তরের নাম", "মোবাইল নাম্বার"-এও "নাম" আছে)
+  for(const f of ['mobile','office','desig','addr','join','name']){
+    if(XL_COLS[f].some(a=>k.includes(a))) return f;
+  }
+  return null;
+}
+function normMobile(v){
+  let d=bn2en(v).replace(/\D/g,''); if(d.startsWith('88')&&d.length>11) d=d.slice(2);
+  if(d.length===10&&d[0]==='1') d='0'+d;   // এক্সেল শুরুর ০ কেটে দিলে
+  return /^01\d{9}$/.test(d)?d:'';
+}
+function downloadTemplate(){
+  if(typeof XLSX==='undefined') return toast('এক্সেল লাইব্রেরি লোড হয়নি (ইন্টারনেট দরকার)');
+  const ws=XLSX.utils.aoa_to_sheet([['নাম','পদবী','দপ্তরের নাম','মোবাইল','ঠিকানা'],['মোঃ উদাহরণ','সহকারী কমিশনার (ভূমি)','উপজেলা ভূমি অফিস','01712345678','বাঞ্ছারামপুর']]);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'সদস্য'); XLSX.writeFile(wb,'members-template.xlsx');
+}
+async function importExcel(inp){
+  const f=inp.files[0]; if(!f) return; inp.value='';
+  if(typeof XLSX==='undefined') return toast('এক্সেল লাইব্রেরি লোড হয়নি (ইন্টারনেট দরকার)');
+  try{
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    if(rows.length<2) return toast('ফাইলে কোনো ডেটা নেই');
+    const usedF=new Set();
+    const map=rows[0].map(h=>{ const f=mapHeader(h); if(!f||usedF.has(f)) return null; usedF.add(f); return f; }); // একই ফিল্ডে দুই কলাম হলে প্রথমটি নেওয়া হবে
+    if(!map.includes('name')||!map.includes('mobile')) return toast('প্রথম সারিতে "নাম" ও "মোবাইল" কলাম থাকতে হবে');
+    const seen=new Set(S.members.map(m=>norm(m.mobile))); const toAdd=[], bad=[], dup=[];
+    rows.slice(1).forEach((r,i)=>{
+      if(r.every(c=>String(c).trim()==='')) return;
+      const o={}; map.forEach((f,ci)=>{ if(f) o[f]=String(r[ci]??'').trim(); });
+      const mob=normMobile(o.mobile);
+      if(!o.name||!mob){ bad.push(`সারি ${bn(i+2)}: ${o.name||'(নাম নেই)'} — নাম/মোবাইল ভুল বা অনুপস্থিত`); return; }
+      if(seen.has(norm(mob))){ dup.push(`সারি ${bn(i+2)}: ${o.name} (${mob}) — আগেই আছে`); return; }
+      seen.add(norm(mob));
+      let join=o.join||''; if(/^\d{4}-\d{2}/.test(join)) join=join.slice(0,7); else join='';
+      toAdd.push({id:uid(),name:o.name,desig:o.desig||'',office:o.office||'',mobile:mob,addr:o.addr||'',join,active:'1',pub:'1'});
+    });
+    if(!toAdd.length){ $('xlResult').innerHTML='নতুন যোগ করার মতো সদস্য পাওয়া যায়নি।'+(bad.length||dup.length?'<br>'+[...bad,...dup].map(esc).join('<br>'):''); return; }
+    if(!confirm(`${toAdd.length} জন নতুন সদস্য যোগ হবে (${dup.length} জন আগে থেকেই আছে, ${bad.length} টি সারিতে ত্রুটি)। চালিয়ে যাবেন?`)) return;
+    for(const m of toAdd){ await Store.save('members',m); syncPublic(m); }
+    $('xlResult').innerHTML=`✔ যোগ হয়েছে: <b>${bn(toAdd.length)}</b> | আগে থেকেই ছিল: <b>${bn(dup.length)}</b> | ত্রুটি: <b>${bn(bad.length)}</b>`+(bad.length||dup.length?'<br>'+[...bad,...dup].map(esc).join('<br>'):'');
+    toast(toAdd.length+' জন সদস্য ইমপোর্ট হয়েছে');
+  }catch(e){ toast('ইমপোর্ট ব্যর্থ: '+e.message); }
+}
+
+/* ---------------- Monthly dues ---------------- */
+function renderDues(){
+  const m=$('uMonth').value||nowM(), f=$('uFilter').value;
+  const rows=activeMembers().map(x=>{ const p=S.payments.find(p=>p.memberId===x.id&&p.month===m&&p.status==='paid'); return {x,p}; })
+    .filter(r=>f==='all'||(f==='paid'?r.p:!r.p));
+  $('uTable').innerHTML=`<table><tr><th>নাম</th><th>দপ্তর</th><th>মোবাইল</th><th>অবস্থা</th><th>মাধ্যম / TrxID</th><th>মোট বকেয়া মাস</th><th></th></tr>`+
+   rows.map(({x,p})=>`<tr><td>${esc(x.name)}<div class="note">${esc(x.desig)}</div></td><td>${esc(x.office)}</td><td>${esc(x.mobile)}</td>
+   <td>${p?'<span class="pill paid">পরিশোধিত</span>':'<span class="pill due">বকেয়া</span>'}</td>
+   <td>${p?esc(p.method||'')+' '+esc(p.trxId||''):''}</td><td>${bn(memberDueMonths(x).length)}</td>
+   <td>${p?`<button class="sec sm" onclick="unpay('${p.id}')">বাতিল</button>`:`<button class="sm" onclick="markPaid('${x.id}','${m}')">নগদ/ম্যানুয়াল পরিশোধ</button>`}</td></tr>`).join('')+'</table>';
+}
+async function markPaid(mid,month){
+  await Store.save('payments',{id:uid(),memberId:mid,mobile:norm(S.members.find(x=>x.id===mid).mobile),month,amount:+S.settings.fee,method:'ম্যানুয়াল',trxId:'',status:'paid',createdAt:Date.now()});
+  toast('পরিশোধিত হিসেবে চিহ্নিত');
+}
+async function unpay(pid){ if(confirm('এই পেমেন্ট রেকর্ড মুছে ফেলবেন?')) await Store.remove('payments',pid); }
+
+/* ---------------- Payment verification ---------------- */
+function renderPayments(){
+  const pend=S.payments.filter(p=>p.status==='pending').sort((a,b)=>b.createdAt-a.createdAt);
+  $('pendCount').textContent=pend.length?`(${bn(pend.length)})`:'';
+  $('pendTable').innerHTML= pend.length? `<table><tr><th>সময়</th><th>মোবাইল</th><th>সদস্য</th><th>মাস</th><th>টাকা</th><th>মাধ্যম</th><th>TrxID</th><th></th></tr>`+
+   pend.map(p=>{const m=findByMobile(p.mobile);return `<tr><td>${new Date(p.createdAt).toLocaleDateString('bn-BD')}</td><td>${esc(p.mobile)}</td>
+   <td>${m?esc(m.name):'<span class="pill due">অমিল</span>'}</td><td>${mLabel(p.month)}</td><td>${bn(p.amount)}</td><td>${esc(p.method)}</td><td>${esc(p.trxId)}</td>
+   <td>${m?`<button class="sm" onclick="approve('${p.id}')">✔ অনুমোদন</button> `:''}<button class="red sm" onclick="unpay('${p.id}')">✖</button></td></tr>`}).join('')+'</table>'
+   : '<p class="note">কোনো অপেক্ষমাণ পেমেন্ট নেই।</p>';
+  const all=S.payments.filter(p=>p.status==='paid').sort((a,b)=>b.createdAt-a.createdAt).slice(0,40);
+  $('allPayTable').innerHTML=`<table><tr><th>সদস্য</th><th>মাস</th><th>টাকা</th><th>মাধ্যম</th><th>TrxID</th></tr>`+
+   all.map(p=>{const m=S.members.find(x=>x.id===p.memberId);return `<tr><td>${esc(m?m.name:'?')}</td><td>${mLabel(p.month)}</td><td>${bn(p.amount)}</td><td>${esc(p.method)}</td><td>${esc(p.trxId)}</td></tr>`}).join('')+'</table>';
+}
+async function approve(pid){
+  const p=S.payments.find(x=>x.id===pid); const m=findByMobile(p.mobile); if(!m) return toast('সদস্য পাওয়া যায়নি');
+  if(S.payments.some(x=>x.memberId===m.id&&x.month===p.month&&x.status==='paid')) return toast('এই মাসের চাঁদা আগেই পরিশোধিত');
+  await Store.save('payments',{...p,memberId:m.id,status:'paid'}); toast(m.name+' — পরিশোধিত');
+}
+async function importStatement(){
+  const text=$('impText').value; if(!text.trim()) return toast('স্টেটমেন্ট পেস্ট করুন');
+  const month=$('impMonth').value; let ok=0,created=0,skipped=[];
+  for(const line of text.split('\n')){
+    const l=line.trim(); if(!l) continue;
+    const mob=(l.match(/(?:\+?88)?(01\d{9})/)||[])[1];
+    const amt=+((l.replace(mob||'','').match(/(\d{2,6})(?:\.\d+)?\s*(?:tk|৳|টাকা)?\s*$/i)||[])[1]||0);
+    const trx=(l.toUpperCase().match(/\b(?=[A-Z0-9]*\d)(?=[A-Z0-9]*[A-Z])[A-Z0-9]{8,12}\b/)||[])[0];
+    const pend=trx&&S.payments.find(p=>p.trxId===trx&&p.status==='pending');
+    if(pend){ const m=findByMobile(pend.mobile)||findByMobile(mob); if(m){ await Store.save('payments',{...pend,memberId:m.id,status:'paid'}); ok++; continue; } }
+    if(trx&&S.payments.some(p=>p.trxId===trx&&p.status==='paid')){ skipped.push(l+' (আগেই আছে)'); continue; }
+    const m=mob&&findByMobile(mob);
+    if(m && !S.payments.some(p=>p.memberId===m.id&&p.month===month&&p.status==='paid')){
+      await Store.save('payments',{id:uid(),memberId:m.id,mobile:norm(m.mobile),month,amount:amt||+S.settings.fee,method:'স্টেটমেন্ট',trxId:trx||'',status:'paid',createdAt:Date.now()}); created++;
+    } else skipped.push(l);
+  }
+  $('impResult').innerHTML=`✔ অপেক্ষমাণ থেকে অনুমোদিত: <b>${bn(ok)}</b> | নতুন পরিশোধ যুক্ত: <b>${bn(created)}</b> | মেলেনি: <b>${bn(skipped.length)}</b>`+(skipped.length?'<br>'+skipped.map(esc).join('<br>'):'');
+}
+
+/* ---------------- SMS ---------------- */
+function buildSms(m){
+  const dm=memberDueMonths(m); const amount=dm.length*(+S.settings.fee);
+  return S.settings.smsTemplate.replace(/{name}/g,m.name).replace(/{months}/g,dm.map(mLabel).join(', ')).replace(/{amount}/g,bn(amount))
+    .replace(/{fee}/g,bn(S.settings.fee)).replace(/{club}/g,S.settings.clubName);
+}
+const dueMembers = () => activeMembers().filter(m=>memberDueMonths(m).length>0);
+function renderSms(){
+  if(document.activeElement!==$('smsTpl')) $('smsTpl').value=S.settings.smsTemplate;
+  const dm=dueMembers();
+  $('smsTable').innerHTML=dm.length? `<table><tr><th>নাম</th><th>মোবাইল</th><th>বকেয়া</th><th>বার্তা</th><th></th></tr>`+
+   dm.map(m=>{const t=buildSms(m);return `<tr><td>${esc(m.name)}</td><td>${esc(m.mobile)}</td><td>${bn(memberDueMonths(m).length)} মাস</td><td class="note">${esc(t)}</td>
+   <td><a href="sms:${m.mobile}?body=${encodeURIComponent(t)}"><button class="sec sm" type="button">📱 ফোন থেকে পাঠান</button></a></td></tr>`}).join('')+'</table>'
+   : '<p class="note">কোনো বকেয়া নেই।</p>';
+}
+async function smsAll(){
+  const url=S.settings.smsUrl; if(!url) return toast('সেটিংসে এসএমএস গেটওয়ে URL দিন');
+  const dm=dueMembers(); if(!dm.length) return toast('কোনো বকেয়া নেই');
+  if(!confirm(dm.length+' জনকে এসএমএস পাঠানো হবে। নিশ্চিত?')) return;
+  let n=0;
+  for(const m of dm){
+    const u=url.replace('{number}',encodeURIComponent(m.mobile)).replace('{message}',encodeURIComponent(buildSms(m)));
+    try{ await fetch(u,{mode:'no-cors'}); n++; }catch(e){}
+    await new Promise(r=>setTimeout(r,400));
+  }
+  toast(bn(n)+' টি অনুরোধ পাঠানো হয়েছে (ডেলিভারি রিপোর্ট গেটওয়ে প্যানেলে দেখুন)');
+}
+function copyNumbers(){ navigator.clipboard.writeText(dueMembers().map(m=>m.mobile).join(',')).then(()=>toast('নাম্বার কপি হয়েছে')); }
+function saveSettingsPartial(o){ Store.saveSettings(o); }
+
+/* ---------------- Settings ---------------- */
+function renderSettings(){
+  if(document.activeElement && document.activeElement.closest('#t_set')) return;
+  const s=S.settings; $('sClub').value=s.clubName; $('sFee').value=s.fee; $('sBkash').value=s.bkash; $('sNagad').value=s.nagad;
+  $('sStart').value=s.startMonth; $('sPin').value=s.pin; $('sSmsUrl').value=s.smsUrl;
+  $('sTagline').value=s.tagline||''; $('sEst').value=s.established||''; $('sAddr').value=s.address||''; $('sPhone').value=s.phone||''; $('sEmail').value=s.email||''; $('sAbout').value=s.about||''; $('sCommittee').value=s.committee||'';
+}
+async function saveSettings(){
+  await Store.saveSettings({clubName:$('sClub').value.trim()||DEFAULT_SETTINGS.clubName,fee:+$('sFee').value||0,bkash:$('sBkash').value.trim(),nagad:$('sNagad').value.trim(),
+    startMonth:$('sStart').value||nowM(),pin:$('sPin').value||'1234',smsUrl:$('sSmsUrl').value.trim(),
+    tagline:$('sTagline').value.trim(),established:$('sEst').value.trim(),address:$('sAddr').value.trim(),phone:$('sPhone').value.trim(),email:$('sEmail').value.trim(),about:$('sAbout').value.trim(),committee:$('sCommittee').value.trim()});
+  toast('সেটিংস সংরক্ষিত');
+}
+
+/* ---------------- Public directory sync & notices ---------------- */
+async function syncPublic(m){
+  if(!useFb) return;
+  try{
+    const ref=db.collection('publicMembers').doc(m.id);
+    if(m.active==='0'||m.pub==='0') await ref.delete();
+    else await ref.set({id:m.id,name:m.name,desig:m.desig||'',office:m.office||''});
+  }catch(e){ console.warn('public sync',e); }
+}
+async function syncAllPublic(){
+  if(!useFb) return toast('এটি শুধু Firebase মোডে কাজ করে');
+  for(const m of S.members) await syncPublic(m);
+  toast('পাবলিক তালিকা হালনাগাদ হয়েছে');
+}
+async function saveNotice(){
+  const title=$('nTitle').value.trim(); if(!title) return toast('শিরোনাম দিন');
+  await Store.save('notices',{id:uid(),title,body:$('nBody').value.trim(),date:$('nDate').value||new Date().toISOString().slice(0,10),createdAt:Date.now()});
+  $('nTitle').value=''; $('nBody').value=''; toast('নোটিশ প্রকাশিত');
+}
+async function delNotice(id){ if(confirm('নোটিশটি মুছবেন?')) await Store.remove('notices',id); }
+function renderNotices(){
+  const l=(S.notices||[]).slice().sort((a,b)=>b.createdAt-a.createdAt);
+  $('noticeTable').innerHTML=l.length?`<table><tr><th>তারিখ</th><th>শিরোনাম</th><th>বিবরণ</th><th></th></tr>`+l.map(n=>`<tr><td>${esc(n.date)}</td><td>${esc(n.title)}</td><td class="note">${esc(n.body)}</td><td><button class="red sm" onclick="delNotice('${n.id}')">🗑️</button></td></tr>`).join('')+'</table>':'<p class="note">কোনো নোটিশ নেই।</p>';
+}
+
+/* ---------------- Render all ---------------- */
+function renderAll(){
+  $('modeBadge').innerHTML = useFb ? '' : '<span class="mode">⚠ ডেমো মোড — ডেটা শুধু এই ব্রাউজারে সংরক্ষিত</span>';
+  document.querySelector('header h1').textContent='🏛️ '+S.settings.clubName;
+  fillPublic();
+  if(!isAdmin) return;
+  monthSelects(); renderDash(); renderMembers(); renderDues(); renderPayments(); renderSms(); renderNotices(); renderSettings();
+  $('smsLen').textContent='নমুনা: '+(dueMembers()[0]?buildSms(dueMembers()[0]):'—');
+}
+
+Store.init().then(()=>{ if(!useFb) route(); else renderAll(); });
+</script>
+</body>
+</html>
