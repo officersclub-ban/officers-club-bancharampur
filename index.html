@@ -410,14 +410,18 @@ function exportCSV(){
 
 /* ---------------- Excel import ---------------- */
 const XL_COLS = {
-  name:['নাম','name','সদস্যের নাম'], desig:['পদবী','পদবি','designation','desig'],
+  name:['নাম','name','সদস্যের নাম'], desig:['পদবী','পদবি','designation','desig','পদ'],
   office:['দপ্তর','office','অফিস'], mobile:['মোবাইল','mobile','phone','ফোন','cell'],
   addr:['ঠিকানা','address'], join:['শুরুর মাস','join','যোগদান']
 };
 const bn2en = s => String(s??'').replace(/[০-৯]/g, d => '০১২৩৪৫৬৭৮৯'.indexOf(d));
 function mapHeader(h){
   const k=String(h||'').trim().toLowerCase();
-  for(const f in XL_COLS){ if(XL_COLS[f].some(a=>k.includes(a))) return f; }
+  if(!k) return null;
+  // নির্দিষ্ট কলাম আগে মেলানো হয়; "নাম" সবার শেষে (কারণ "দপ্তরের নাম", "মোবাইল নাম্বার"-এও "নাম" আছে)
+  for(const f of ['mobile','office','desig','addr','join','name']){
+    if(XL_COLS[f].some(a=>k.includes(a))) return f;
+  }
   return null;
 }
 function normMobile(v){
@@ -437,7 +441,8 @@ async function importExcel(inp){
     const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
     if(rows.length<2) return toast('ফাইলে কোনো ডেটা নেই');
-    const map=rows[0].map(mapHeader);
+    const usedF=new Set();
+    const map=rows[0].map(h=>{ const f=mapHeader(h); if(!f||usedF.has(f)) return null; usedF.add(f); return f; }); // একই ফিল্ডে দুই কলাম হলে প্রথমটি নেওয়া হবে
     if(!map.includes('name')||!map.includes('mobile')) return toast('প্রথম সারিতে "নাম" ও "মোবাইল" কলাম থাকতে হবে');
     const seen=new Set(S.members.map(m=>norm(m.mobile))); const toAdd=[], bad=[], dup=[];
     rows.slice(1).forEach((r,i)=>{
