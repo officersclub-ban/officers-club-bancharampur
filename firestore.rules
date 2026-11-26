@@ -17,6 +17,17 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // পাবলিক ওয়েবসাইটের জন্য: সদস্যের শুধু নাম, পদবী ও দপ্তর (মোবাইল/ঠিকানা নয়)
+    match /publicMembers/{id} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    // পাবলিক নোটিশ
+    match /notices/{id} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // পেমেন্ট — যে কেউ শুধু "pending" তথ্য জমা দিতে পারবে; দেখা/অনুমোদন/মোছা শুধু অ্যাডমিন
     match /payments/{id} {
       allow create: if request.resource.data.status == 'pending'
